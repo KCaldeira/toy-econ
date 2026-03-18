@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 
 def load_data(xlsx_path):
@@ -40,18 +41,32 @@ def run_regression(year, Y_per_capita, T, T_ref, start_year=0):
     n_obs = len(delta_y)
     n_params = X.shape[1]
 
+    dof = n_obs - n_params
     ss_res = np.sum(resid ** 2)
     ss_tot = np.sum((delta_y - np.mean(delta_y)) ** 2)
     r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else float("nan")
-    residual_se = np.sqrt(ss_res / max(n_obs - n_params, 1))
+    adj_r_squared = 1 - (1 - r_squared) * (n_obs - 1) / max(dof, 1)
+    sigma2 = ss_res / max(dof, 1)
+    residual_se = np.sqrt(sigma2)
+
+    # Coefficient covariance matrix: sigma^2 * (X'X)^{-1}
+    cov = sigma2 * np.linalg.inv(X.T @ X)
+    std_errors = np.sqrt(np.diag(cov))
+    t_stats = coeffs / std_errors
+    p_values = 2 * stats.t.sf(np.abs(t_stats), df=dof)
 
     return {
         "coeffs": coeffs,
+        "std_errors": std_errors,
+        "t_stats": t_stats,
+        "p_values": p_values,
         "labels": ["g0", "g1", "g2", "h1"],
         "r_squared": r_squared,
+        "adj_r_squared": adj_r_squared,
         "residual_se": residual_se,
         "n_obs": n_obs,
         "n_params": n_params,
+        "dof": dof,
         "delta_y": delta_y,
         "y_hat": y_hat,
         "t": t,
@@ -61,12 +76,18 @@ def run_regression(year, Y_per_capita, T, T_ref, start_year=0):
 
 def print_summary(result):
     print("OLS Regression: delta_y = g0 + g1*t + g2*t^2 + h1*(T - T_ref)")
-    print("-" * 55)
-    for label, coeff in zip(result["labels"], result["coeffs"]):
-        print(f"  {label:>4s} = {coeff: .8e}")
+    print("-" * 65)
+    print(f"  {'':>4s}   {'Estimate':>14s}  {'Std Error':>14s}  {'t':>9s}  {'p':>9s}")
+    for label, coeff, se, t, p in zip(
+        result["labels"], result["coeffs"], result["std_errors"],
+        result["t_stats"], result["p_values"],
+    ):
+        print(f"  {label:>4s}   {coeff: .8e}  {se: .8e}  {t: 8.3f}  {p: .2e}")
     print(f"\n  R²          = {result['r_squared']:.8f}")
+    print(f"  Adj R²      = {result['adj_r_squared']:.8f}")
     print(f"  Residual SE = {result['residual_se']:.8e}")
     print(f"  N obs       = {result['n_obs']}")
+    print(f"  DF          = {result['dof']}")
 
 
 def write_output(result, output_path):
@@ -89,16 +110,22 @@ def write_output(result, output_path):
         coeff_df = pd.DataFrame({
             "parameter": result["labels"],
             "estimate": result["coeffs"],
+            "std_error": result["std_errors"],
+            "t_statistic": result["t_stats"],
+            "p_value": result["p_values"],
         })
         coeff_df.to_excel(writer, sheet_name="coefficients", index=False)
 
         stats_df = pd.DataFrame({
-            "statistic": ["R_squared", "residual_SE", "n_obs", "n_params"],
+            "statistic": ["R_squared", "adj_R_squared", "residual_SE",
+                          "n_obs", "n_params", "dof"],
             "value": [
                 result["r_squared"],
+                result["adj_r_squared"],
                 result["residual_se"],
                 result["n_obs"],
                 result["n_params"],
+                result["dof"],
             ],
         })
         stats_df.to_excel(writer, sheet_name="stats", index=False)
@@ -107,7 +134,7 @@ def write_output(result, output_path):
 
 
 if __name__ == "__main__":
-    xlsx_path = sys.argv[1] if len(sys.argv) > 1 else "data/output/model_output.xlsx"
+    xlsx_path = sys.argv[1] if len(sys.argv) > 1 else "data/output/forward_output.xlsx"
     param_file = sys.argv[2] if len(sys.argv) > 2 else "json/default_params.json"
 
     with open(param_file) as f:

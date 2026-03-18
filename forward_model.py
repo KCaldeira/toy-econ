@@ -111,7 +111,7 @@ if __name__ == "__main__":
         params = json.load(f)
 
     results = integrate_model(params)
-    df = write_output(results, "data/output/model_output.xlsx")
+    df = write_output(results, "data/output/forward_output.xlsx")
 
     print(f"Simulated {int(params['n_years'])} years")
     print(f"  Final Y:            {results['Y'][-1]:.2f}")
@@ -120,4 +120,4 @@ if __name__ == "__main__":
     print(f"  Final K per capita: {results['K_per_capita'][-1]:.2f}")
     print(f"  Final A (TFP):      {results['A'][-1]:.4f}")
     print(f"  Final L:            {results['L'][-1]:.4f}")
-    print(f"Output written to data/output/model_output.xlsx")
+    print(f"Output written to data/output/forward_output.xlsx")
