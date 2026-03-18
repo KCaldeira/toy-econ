@@ -9,13 +9,20 @@
   "delta": 0.1,
   "n_years": 100,
   "climate_response": {
-    "T_opt": 0.0,
+    "T_ref": 0.0,
     "h_tfp": 0.0,
     "h_output": 0.0,
     "h_depreciation": 0.0
   },
+  "noise": {
+    "N_output": 0.0,
+    "N_depreciation": 0.0,
+    "N_tfp": 0.0
+  },
   "temperature": {
-    "T0": 0.0,
-    "T_trend": 0.03
+    "T_init": 0.0,
+    "T_rate": 0.03,
+    "T_theta": 0.0,
+    "N_temperature": 0.0
   }
 }

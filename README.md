@@ -11,39 +11,34 @@ Cobb-Douglas production function with capital accumulation and exponential TFP g
 - **alpha = 0.3** — capital share
 - **delta = 0.1** — depreciation rate (~10-year capital lifetime)
 - **s = 0.2** — savings/investment rate
-- **TFP**: A(t) = A0 * exp(g * t), exponential growth at fixed rate g
+- **TFP**: A(t) = A(t-1) * exp(g + h_tfp * h_base(T, T_ref)), exponential growth modified by climate
+- **Temperature**: T(t) = T0 + T_trend * t (linear ramp)
 
 Capital accumulates as:
 
-    K(t+1) = (1 - delta) * K(t) + s * Y(t)
+    K(t+1) = K(t) + s * Y(t) - delta_eff(t) * K(t)
 
 ## Climate response
 
-Climate affects the economy through three channels:
+All climate channels use a common base function:
 
-1. **Output** — direct damage to production
-2. **Depreciation** — accelerated capital destruction
-3. **TFP growth** — reduced productivity growth
+    h_base(T, T_ref) = T - T_ref
 
-Each channel is a function of temperature T, with additive noise.
+Climate affects the economy through three channels, each scaled by its own coefficient:
 
-## Statistical estimation
+1. **Output** — Y is multiplied by exp(h_output * h_base(T, T_ref))
+2. **Depreciation** — delta_eff = delta + h_depreciation * h_base(T, T_ref)
+3. **TFP growth** — g_eff = g + h_tfp * h_base(T, T_ref)
 
-The estimation procedure attempts to recover the climate response from simulated data:
-
-    delta_y = h(T) + j(t)
-
-where:
-- **j(t)** is a quadratic OLS time trend (captures TFP growth and convergence dynamics)
-- **h(T) = h0 + h1*T + h2*T^2** is the climate response function to be estimated
+Parameters are read from a JSON file (see `json/default_params.json`). All climate coefficients default to zero, giving a pure Solow-Swan model.
 
 ## Project structure
 
 ```
-src/            # Model and estimation code
-scripts/        # Run scripts
-data/output/    # Generated simulation data (git-ignored)
-plots/          # Generated figures (git-ignored)
+forward_model.py    # Core Solow-Swan model with climate response
+json/               # Parameter files (JSON)
+data/output/        # Generated simulation data (git-ignored)
+plots/              # Generated figures (git-ignored)
 ```
 
 ## Outputs

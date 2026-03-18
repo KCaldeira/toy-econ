@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 
-def h_base(T, T_opt):
-    return (T - T_opt) ** 2
+def h_base(T, T_ref):
+    return T - T_ref
 
 
 def integrate_model(params):
@@ -22,14 +22,21 @@ def integrate_model(params):
     n_years = params["n_years"]
 
     cr = params.get("climate_response") or {}
-    T_opt = cr.get("T_opt", 0.0)
+    T_ref = cr.get("T_ref", 0.0)
     h_tfp = cr.get("h_tfp", 0.0)
     h_output = cr.get("h_output", 0.0)
     h_depreciation = cr.get("h_depreciation", 0.0)
 
+    noise = params.get("noise") or {}
+    N_output = noise.get("N_output", 0.0)
+    N_depreciation = noise.get("N_depreciation", 0.0)
+    N_tfp = noise.get("N_tfp", 0.0)
+
     temp = params.get("temperature") or {}
-    T0 = temp.get("T0", 0.0)
-    T_trend = temp.get("T_trend", 0.0)
+    T_init = temp.get("T_init", 0.0)
+    T_rate = temp.get("T_rate", 0.0)
+    T_theta = temp.get("T_theta", 0.0)
+    N_temperature = temp.get("N_temperature", 0.0)
 
     # Pre-allocate arrays
     year = np.arange(n_years, dtype=float)
@@ -42,26 +49,30 @@ def integrate_model(params):
     delta_eff = np.zeros(n_years)
 
     K[0] = K0
-    cum_g = 0.0
+
+    # Temperature: deterministic trend + AR(1) random component
+    T_random = np.zeros(n_years)
+    for t in range(1, n_years):
+        T_random[t] = T_theta * T_random[t - 1] + N_temperature * np.random.normal()
+    for t in range(n_years):
+        T[t] = T_init + T_rate * t + T_random[t]
 
     for t in range(n_years):
-        T[t] = T0 + T_trend * t
-        Tt = T[t]
 
         # Effective TFP growth rate
         if t == 0:
             A[t] = A0
         else:
-            A[t] = A[t - 1] * math.exp(g + h_tfp * h_base(T[t], T_opt))
+            A[t] = A[t - 1] * math.exp(g + h_tfp * h_base(T[t], T_ref) + N_tfp * np.random.normal())
 
         # Population
         L[t] = L0 * math.exp(n * t)
 
         # Output (Cobb-Douglas)
-        Y[t] = A[t] * K[t] ** alpha * L[t] ** (1 - alpha) * math.exp(h_output * h_base(T[t],T_opt))
+        Y[t] = A[t] * K[t] ** alpha * L[t] ** (1 - alpha) * math.exp(h_output * h_base(T[t], T_ref) + N_output * np.random.normal())
 
         # Effective depreciation
-        delta_eff[t] = delta + h_depreciation * h_base(T[t], T_opt)
+        delta_eff[t] = delta + h_depreciation * h_base(T[t], T_ref) + N_depreciation * np.random.normal()
 
         # Capital accumulation
         if t < n_years - 1:
