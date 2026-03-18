@@ -32,10 +32,23 @@ Climate affects the economy through three channels, each scaled by its own coeff
 
 Parameters are read from a JSON file (see `json/default_params.json`). All climate coefficients default to zero, giving a pure Solow-Swan model.
 
+## Econometric estimation
+
+`regression_model.py` reads the forward model output and attempts to recover the climate signal by regressing the first difference of log per-capita output on a time polynomial and temperature:
+
+    delta_y[t] = g0 + g1*t + g2*t^2 + h1*(T[t] - T_ref)
+
+where `delta_y[t] = log(Y_per_capita[t]) - log(Y_per_capita[t-1])`.
+
+A `regression_start_year` parameter (default 20) skips early years to let capital stock approach its balanced-growth path before estimation begins.
+
+Results (fitted values, coefficients, and summary statistics) are written to `data/output/regression_output.xlsx`.
+
 ## Project structure
 
 ```
 forward_model.py    # Core Solow-Swan model with climate response
+regression_model.py # OLS estimation of climate response from model output
 json/               # Parameter files (JSON)
 data/output/        # Generated simulation data (git-ignored)
 plots/              # Generated figures (git-ignored)
@@ -44,8 +57,7 @@ plots/              # Generated figures (git-ignored)
 ## Outputs
 
 - **PDF** — figures via matplotlib
-- **CSV** — tabular simulation results
-- **Excel** — rich formatted output via xlsxwriter/openpyxl
+- **Excel** — simulation results and regression output via xlsxwriter/openpyxl
 
 ## Usage
 
@@ -53,6 +65,9 @@ plots/              # Generated figures (git-ignored)
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+python forward_model.py                # run forward model
+python regression_model.py             # estimate climate response
 ```
 
-Then run scripts from the project root (scripts to be added).
+Both scripts accept optional arguments for custom input/param paths; see `__main__` blocks for details.

@@ -12,7 +12,7 @@
   "climate_response": {
     "T_ref": 15.0,
     "h_tfp": 0.0,
-    "h_output": -0.001,
+    "h_output": 0.0,
     "h_depreciation": 0.0
   },
   "noise": {
@@ -22,8 +22,8 @@
   },
   "temperature": {
     "T_init": 15.0,
-    "T_rate": 0.02,
-    "T_theta": 0.5,
-    "N_temperature": 0.1
+    "T_rate": 0.0,
+    "T_theta": 0.0,
+    "N_temperature": 0.0
   }
 }
