@@ -1,0 +1,21 @@
+{
+  "K0": 100.0,
+  "alpha": 0.3,
+  "L0": 1.0,
+  "n": 0.01,
+  "A0": 1.0,
+  "g": 0.02,
+  "s": 0.2,
+  "delta": 0.1,
+  "n_years": 100,
+  "climate_response": {
+    "T_opt": 0.0,
+    "h_tfp": 0.0,
+    "h_output": 0.0,
+    "h_depreciation": 0.0
+  },
+  "temperature": {
+    "T0": 0.0,
+    "T_trend": 0.03
+  }
+}
